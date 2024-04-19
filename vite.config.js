@@ -11,5 +11,5 @@ const __dirname = dirname(__filename);
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [vue(), nodePolyfills()],
-    base: "/first-contract-frontend/",
+    base: "/ton-dapp-lessons/",
 })
