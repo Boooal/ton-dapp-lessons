@@ -1,77 +1,154 @@
 <script setup>
-import {useWallet} from "./shared/lib/ton-connect/useWallet.js";
 import {computed, onMounted, ref, watch} from "vue";
-import {getOpenContract} from "./shared/lib/ton-client/tonClient.js";
-import {fromNano, toNano} from "ton-core";
+import {Address, fromNano, toNano} from "ton-core";
 
-const openedContract = ref(null);
 const contractData = ref(null);
 const contractAddress = ref(null);
 const contractBalance = ref();
 const updateContractDataInterval = ref()
-const wallet = ref();
+import {useStore} from "vuex";
 
-async function sendIncrement() {
-  return openedContract.value?.sendIncrement(sender, toNano('0.05'), 5);
-}
+const store = useStore();
 
-const sender = computed(() => {
-  return getSender(wallet);
-})
+const sender = computed(() => store.getters["wallet/getSender"]);
+const connected = computed(() => store.getters["wallet/connected"]);
+const contract = computed(() => store.getters["mainContract/getOpenContract"]);
 
 
-onMounted(async () => {
-  wallet.value = useWallet();
-  openedContract.value = await getOpenContract();
-});
+function updateContractData() {
+  if (!contract.value) return;
 
-
-watch(openedContract, async (newContract) => {
-  if (!newContract) return;
   clearInterval(updateContractDataInterval.value);
   setInterval(async () => {
-    const val = await newContract.getData();
+    const val = await contract.value.getData();
     contractData.value = {
       counter_value: val.number,
       recent_sender: val.recent_sender,
       owner_address: val.owner_address,
     };
-    contractAddress.value = newContract.address.toString();
-    const balance = await newContract.getBalance();
+    contractAddress.value = Address.parseFriendly(contract.value.address.toString()).address;
+    const balance = await contract.value.getBalance();
     if (balance.balance > 0) {
       contractBalance.value = fromNano(balance.balance)
     }
-  }, 5000);
+  }, 5000)
+}
 
-})
+
+async function sendIncrement() {
+  await contract.value?.sendIncrement(sender.value, toNano('0.05'), 5);
+}
+
+async function sendDeposit() {
+  await contract.value?.sendDeposit(sender.value, toNano('0.111'));
+}
+
+async function sendWithdrawRequest() {
+  await contract.value?.sendWithdrawalRequest(sender.value, toNano('0.05'), toNano('0.3'))
+}
+
+onMounted(async () => {
+  await store.dispatch('wallet/initTonConnectUI');
+  await store.dispatch('mainContract/initTonClient');
+  updateContractData();
+});
 
 
 </script>
 
 <template>
   <div class="app">
-    <div id="ton-connect-button" class="wallet-button"></div>
-    <div v-if="contractAddress">{{ contractAddress }}</div>
-    <div v-if="contractBalance">{{ contractBalance }}</div>
-    <div v-if="contractData">
-      <div>{{ contractData.counter_value }}</div>
-      <div>{{ contractData.recent_sender }}</div>
-      <div>{{ contractData.owner_address }}</div>
+
+    <div class="wallet-button-wrap">
+      <div id="ton-connect-button"></div>
     </div>
-    <button @click="sendIncrement">Increment</button>
-    <button v-if="wallet?.connected">Increment wow</button>
+
+
+    <div class="main-contract-data">
+
+      <div class="contract-data-title">Адрес контракта</div>
+      <div class="contract-data-value">{{ contractAddress }}</div>
+
+      <div class="contract-data-title">Баланс контракта</div>
+      <div class="contract-data-value">{{ contractBalance }}</div>
+
+      <div class="contract-data-title">Счетчик</div>
+      <div class="contract-data-value">{{ contractData?.counter_value }}</div>
+
+      <div class="contract-data-title">Последний отправитель</div>
+      <div class="contract-data-value">{{ contractData?.recent_sender }}</div>
+
+      <div class="contract-data-title">Адрес владельца</div>
+      <div class="contract-data-value">{{ contractData?.owner_address }}</div>
+
+    </div>
+
+    <button
+        v-if="connected"
+        @click="sendIncrement"
+        class="increment-button"
+    >
+      Increment by 5
+    </button>
+
+    <button
+      v-if="connected"
+      @click="sendDeposit"
+      class="increment-button"
+      >
+      Send 0.111 TON
+    </button>
+
+    <button
+      v-if="connected"
+      @click="sendWithdrawRequest"
+      class="increment-button"
+      >
+      Withdraw 0.3 TON
+    </button>
+
   </div>
 
 </template>
 
 <style scoped>
 .app {
-  height: 80vh;
-  width: 80vw;
+  height: 100vh;
+  width: 100vw;
   background: #888888;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-.wallet-button {
+.wallet-button-wrap {
   padding: 1rem;
 }
+
+.main-contract-data {
+  font-family: "Arial", serif;
+  font-weight: bold;
+}
+
+.contract-data-title {
+  font-size: 1.5rem;
+  color: aliceblue;
+  text-align: center;
+  padding: 1rem;
+}
+
+.contract-data-value {
+  text-align: center;
+}
+
+.increment-button {
+  padding: 1rem;
+  border: 1px solid black;
+  border-radius: 5px;
+  margin-top: 1rem;
+}
+
+
+
 </style>
