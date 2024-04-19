@@ -1,12 +1,14 @@
 <script setup>
 import {computed, onMounted, ref, watch} from "vue";
+import {useStore} from "vuex";
 import {Address, fromNano, toNano} from "ton-core";
+import WebApp from "@twa-dev/sdk";
 
 const contractData = ref(null);
 const contractAddress = ref(null);
 const contractBalance = ref();
 const updateContractDataInterval = ref()
-import {useStore} from "vuex";
+const webApp = ref(WebApp);
 
 const store = useStore();
 
@@ -47,6 +49,10 @@ async function sendWithdrawRequest() {
   await contract.value?.sendWithdrawalRequest(sender.value, toNano('0.05'), toNano('0.3'))
 }
 
+function showTelegramAlert() {
+  WebApp.showAlert("hey here");
+}
+
 onMounted(async () => {
   await store.dispatch('wallet/initTonConnectUI');
   await store.dispatch('mainContract/initTonClient');
@@ -65,6 +71,8 @@ onMounted(async () => {
 
 
     <div class="main-contract-data">
+
+      <p @click="showTelegramAlert">Platform {{ WebApp.platform }}</p>
 
       <div class="contract-data-title">Адрес контракта</div>
       <div class="contract-data-value">{{ contractAddress }}</div>
