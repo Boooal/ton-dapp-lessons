@@ -11,9 +11,5 @@ const __dirname = dirname(__filename);
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [vue(), nodePolyfills()],
-    resolve: {
-        alias: [
-            {find: '@', replacement: resolve(__dirname, "./src")},
-        ]
-    }
+    base: "/first_contract_frontend/",
 })

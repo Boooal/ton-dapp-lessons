@@ -1,6 +1,6 @@
 import {getHttpEndpoint} from "@orbs-network/ton-access";
 import {TonClient} from "ton";
-import {MainContract} from "@/shared/contracts/MainContract.ts";
+import {MainContract} from "../../contracts/MainContract.ts";
 import {Address} from "ton-core";
 
 const contractAddress = 'kQAUf3sJTAJJqV7h-iN7yXnhcu-bzbniOKWb-6r2gaRO1_HE';
